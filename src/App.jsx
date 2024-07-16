@@ -4,7 +4,7 @@ import { Line } from 'react-chartjs-2';
 import 'react-calendar/dist/Calendar.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'; // Import the CSS file
-import { Container, Row, Col, Form, Button, Navbar, Nav, ListGroup } from 'react-bootstrap'; // Ensure to import Nav and other required components
+import { Container, Row, Col, Form, Button, Navbar, Nav, ListGroup, ProgressBar } from 'react-bootstrap'; // Ensure to import Nav and other required components
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -34,13 +34,13 @@ const App = () => {
     const savedScores = localStorage.getItem('scores');
     return savedScores ? JSON.parse(savedScores) : {};
   });
-  const [inputScore, setInputScore] = useState('');
   const [tasks, setTasks] = useState(() => {
     // Load tasks from localStorage if they exist
     const savedTasks = localStorage.getItem('tasks');
     return savedTasks ? JSON.parse(savedTasks) : {};
   });
   const [taskInput, setTaskInput] = useState('');
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     // Save scores to localStorage whenever they change
@@ -54,15 +54,8 @@ const App = () => {
 
   const handleDateClick = (date) => {
     setSelectedDate(date);
-  };
-
-  const handleScoreSubmit = (e) => {
-    e.preventDefault();
-    if (selectedDate && inputScore !== '') {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      setScores({ ...scores, [dateStr]: Number(inputScore) });
-      setInputScore('');
-    }
+    const dateStr = date.toISOString().split('T')[0];
+    updateProgress(dateStr);
   };
 
   const handleTaskAdd = () => {
@@ -71,6 +64,7 @@ const App = () => {
       const newTaskList = [...(tasks[dateStr] || []), { task: taskInput.trim(), completed: false }];
       setTasks({ ...tasks, [dateStr]: newTaskList });
       setTaskInput('');
+      updateProgress(dateStr, newTaskList);
     }
   };
 
@@ -78,6 +72,24 @@ const App = () => {
     const updatedTasks = [...tasks[dateStr]];
     updatedTasks[index].completed = !updatedTasks[index].completed;
     setTasks({ ...tasks, [dateStr]: updatedTasks });
+    updateProgress(dateStr, updatedTasks);
+  };
+
+  const handleToggleClick = () => {
+    window.location.href = 'https://www.linkedin.com/in/sayyad-taufeeq-ait/';
+  };
+
+  const updateProgress = (dateStr, taskList = tasks[dateStr]) => {
+    if (!taskList || taskList.length === 0) {
+      setProgress(0);
+      setScores({ ...scores, [dateStr]: 0 });
+      return;
+    }
+
+    const completedTasks = taskList.filter(task => task.completed).length;
+    const progressPercentage = (completedTasks / taskList.length) * 100;
+    setProgress(progressPercentage);
+    setScores({ ...scores, [dateStr]: progressPercentage });
   };
 
   const getDataForChart = () => {
@@ -131,12 +143,10 @@ const App = () => {
       <Navbar bg="dark" variant="dark" expand="md" className="mb-4">
         <Container>
           <Navbar.Brand href="#home">
-            <img
-             
-            />
-            {' AMPLIFY'}
+           
+            {'AMPLIFY 📈'}
           </Navbar.Brand>
-          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+          <Navbar.Toggle aria-controls="basic-navbar-nav" onClick={handleToggleClick} />
           <Navbar.Collapse id="basic-navbar-nav">
             <Nav className="me-auto">
               {/* Add additional navbar links or components here */}
@@ -155,25 +165,10 @@ const App = () => {
           <Col md={6}>
             {selectedDate && (
               <>
-                <Form onSubmit={handleScoreSubmit}>
-                  <Form.Group controlId="scoreInput">
-                    <Form.Label>Score for {selectedDate.toDateString()}</Form.Label>
-                    <Form.Control
-                      type="number"
-                      value={inputScore}
-                      onChange={(e) => setInputScore(e.target.value)}
-                      min="0"
-                      max="100"
-                    />
-                  </Form.Group>
-                  <Button variant="primary" type="submit" className="mt-2">
-                    Submit Score
-                  </Button>
-                </Form>
-                <hr />
                 <Form onSubmit={(e) => { e.preventDefault(); handleTaskAdd(); }}>
                   <Form.Group controlId="taskInput">
-                    <Form.Label>Daily Tasks</Form.Label>
+                    <Form.Label><h3>Daily Tasks</h3>
+                    </Form.Label>
                     <Form.Control
                       type="text"
                       placeholder="Enter task"
@@ -185,6 +180,9 @@ const App = () => {
                     Add Task
                   </Button>
                 </Form>
+                <hr />
+                <h4>Progress</h4>
+                <ProgressBar now={progress} label={`${Math.round(progress)}%`} className="mb-4" />
               </>
             )}
           </Col>
@@ -192,7 +190,7 @@ const App = () => {
         {selectedDate && tasks[selectedDate.toISOString().split('T')[0]] && (
           <Row className="mt-4">
             <Col>
-              <h5>Tasks for {selectedDate.toDateString()}</h5>
+              
               <ListGroup>
                 {tasks[selectedDate.toISOString().split('T')[0]].map((task, index) => (
                   <ListGroup.Item key={index}>
